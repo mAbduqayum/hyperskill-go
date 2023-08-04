@@ -24,7 +24,7 @@ func main() {
 	var seed int64
 	var size, generation int
 	seed = 1
-	generation = 10
+	generation = 50
 
 	// Scan for the first line that contains n and seed
 	if scanner.Scan() {
@@ -39,8 +39,8 @@ func main() {
 		world = nextGeneration(world)
 		fmt.Printf("Generation #%d\n", i)
 		beautify(world)
-		//time.Sleep(500 * time.Millisecond)
-		//fmt.Print("\033[H\033[2J")
+		time.Sleep(300 * time.Millisecond)
+		fmt.Print("\033[H\033[2J")
 	}
 	beautify(world)
 }
