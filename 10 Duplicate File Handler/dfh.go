@@ -27,8 +27,29 @@ func main() {
 	list := walkDir(fileFormat)
 	fmt.Println()
 	printMap(list, sortOption)
-	filesByOrder := handleDuplicates(list)
-	deleteFiles(filesByOrder)
+	yesNo := shouldHandleDuplicates()
+	if yesNo {
+		fmt.Println()
+		filesByOrder := handleDuplicates(list)
+		deleteFiles(filesByOrder)
+	}
+	fmt.Println("bye-bye.")
+}
+
+func shouldHandleDuplicates() bool {
+	input := inputClosure()
+	for {
+		fmt.Println("Check for duplicates? (yes|no)")
+		checkDuplicates := strings.ToLower(input())
+		if checkDuplicates == "yes" {
+			return true
+		}
+		if checkDuplicates == "no" {
+			return false
+		}
+		fmt.Println("Wrong option")
+		fmt.Println()
+	}
 }
 
 func deleteFiles(filesByOrder map[int]string) {
@@ -91,44 +112,35 @@ func getFileSize(filePath string) int {
 }
 
 func handleDuplicates(list map[int][]string) map[int]string {
-	input := inputClosure()
-	for {
-		fmt.Println("Check for duplicates? (yes|no)")
-		checkDuplicates := strings.ToLower(input())
-		if checkDuplicates == "yes" {
-			break
-		}
-		if checkDuplicates == "no" {
-			return nil
-		}
-		fmt.Println("Wrong option")
-		fmt.Println()
-	}
-
 	filesSizes := make(map[int]map[string][]string)
 	filesByOrder := make(map[int]string)
-	cnt := 1
 	for fileSize, filePaths := range list {
 		filesSizes[fileSize] = make(map[string][]string)
 		for _, filePath := range filePaths {
 			hash := fmt.Sprintf("%x", fileHash(filePath))
 			filesSizes[fileSize][hash] = append(filesSizes[fileSize][hash], filePath)
-			filesByOrder[cnt] = filePath
-			cnt++
 		}
 	}
 
-	cnt = 1
-	for size, filesHash := range filesSizes {
-		fmt.Println(size, "bytes")
-		for hash, filePaths := range filesHash {
-			fmt.Println(hash)
+	cnt := 1
+	for size, hashMap := range filesSizes {
+		writeSize := true
+		for hash, filePaths := range hashMap {
+			if len(filePaths) < 2 {
+				continue
+			}
+			if writeSize {
+				fmt.Println(size, "bytes")
+				writeSize = false
+			}
+			fmt.Println("Hash:", hash)
 			for _, filePath := range filePaths {
 				fmt.Printf("%d. %s\n", cnt, filePath)
+				filesByOrder[cnt] = filePath
 				cnt++
 			}
-			fmt.Println()
 		}
+		fmt.Println()
 	}
 
 	return filesByOrder
