@@ -19,59 +19,36 @@ func main() {
 		fmt.Println("Directory is not specified")
 		return
 	}
+
 	fmt.Println("Enter file format:")
-	fileFormat := inputClosure()()
+	fileFormat := input()
 	fileFormat = strings.TrimPrefix(fileFormat, ".")
-	fmt.Println()
+
 	sortOption := getSortOption()
 	list := walkDir(fileFormat)
-	fmt.Println()
-	printMap(list, sortOption)
-	yesNo := shouldHandleDuplicates()
-	if yesNo {
+	printFiles(list, sortOption)
+
+	if getConfirmation("Check for duplicates?") {
 		fmt.Println()
-		filesByOrder := handleDuplicates(list)
-		deleteFiles(filesByOrder)
+		filesByOrder := handleDuplicates(list, sortOption)
+		if getConfirmation("Delete files?") {
+			deleteFiles(filesByOrder)
+		}
 	}
 	fmt.Println("bye-bye.")
 }
 
-func shouldHandleDuplicates() bool {
-	input := inputClosure()
-	for {
-		fmt.Println("Check for duplicates? (yes|no)")
-		checkDuplicates := strings.ToLower(input())
-		if checkDuplicates == "yes" {
-			return true
-		}
-		if checkDuplicates == "no" {
-			return false
-		}
-		fmt.Println("Wrong option")
-		fmt.Println()
-	}
-}
-
 func deleteFiles(filesByOrder map[int]string) {
-	input := inputClosure()
-	for {
-		fmt.Println("Delete files? (yes|no)")
-		removeFiles := strings.ToLower(input())
-		if removeFiles == "yes" {
-			fmt.Println()
-			break
-		}
-		if removeFiles == "no" {
-			return
-		}
-		fmt.Println("Wrong option")
-	}
 	var nums []int
 	runOuterLoop := true
 	for runOuterLoop {
 		nums = make([]int, 0)
 		fmt.Println("Enter file numbers to delete:")
 		numsInput := input()
+		if len(numsInput) == 0 {
+			fmt.Println("Wrong format")
+			continue
+		}
 		numsString := strings.Fields(numsInput)
 		for _, s := range numsString {
 			sInt, err := strconv.Atoi(s)
@@ -93,7 +70,7 @@ func deleteFiles(filesByOrder map[int]string) {
 	totalFreedSpace := 0
 	for _, num := range nums {
 		filePath := filesByOrder[num]
-		totalFreedSpace += getFileSize(filePath)
+		totalFreedSpace += fileSize(filePath)
 		err := os.Remove(filePath)
 		if err != nil {
 			fmt.Println("Error deleting this file:", filePath)
@@ -103,47 +80,10 @@ func deleteFiles(filesByOrder map[int]string) {
 	fmt.Printf("Total freed up space: %d bytes\n", totalFreedSpace)
 }
 
-func getFileSize(filePath string) int {
-	fi, err := os.Stat(filePath)
-	if err != nil {
-		fmt.Println("Could not obtain stat, handle error")
-	}
-	return int(fi.Size())
-}
-
-func handleDuplicates(list map[int][]string) map[int]string {
-	filesSizes := make(map[int]map[string][]string)
-	filesByOrder := make(map[int]string)
-	for fileSize, filePaths := range list {
-		filesSizes[fileSize] = make(map[string][]string)
-		for _, filePath := range filePaths {
-			hash := fmt.Sprintf("%x", fileHash(filePath))
-			filesSizes[fileSize][hash] = append(filesSizes[fileSize][hash], filePath)
-		}
-	}
-
-	cnt := 1
-	for size, hashMap := range filesSizes {
-		writeSize := true
-		for hash, filePaths := range hashMap {
-			if len(filePaths) < 2 {
-				continue
-			}
-			if writeSize {
-				fmt.Println(size, "bytes")
-				writeSize = false
-			}
-			fmt.Println("Hash:", hash)
-			for _, filePath := range filePaths {
-				fmt.Printf("%d. %s\n", cnt, filePath)
-				filesByOrder[cnt] = filePath
-				cnt++
-			}
-		}
-		fmt.Println()
-	}
-
-	return filesByOrder
+func input() string {
+	reader := bufio.NewReader(os.Stdin)
+	line, _ := reader.ReadString('\n')
+	return strings.TrimSpace(line)
 }
 
 func fileHash(fileName string) []byte {
@@ -164,9 +104,31 @@ func fileHash(fileName string) []byte {
 	return hashAlg.Sum(nil)
 }
 
+func fileSize(filePath string) int {
+	fi, err := os.Stat(filePath)
+	if err != nil {
+		fmt.Println("Could not obtain stat, handle error")
+	}
+	return int(fi.Size())
+}
+
+func getConfirmation(prompt string) bool {
+	for {
+		fmt.Println(prompt + " (yes|no)")
+		response := strings.ToLower(input())
+		switch response {
+		case "yes":
+			return true
+		case "no":
+			return false
+		default:
+			fmt.Println("Wrong option")
+		}
+	}
+}
+
 func getSortOption() int {
-	input := inputClosure()
-	fmt.Println("Size sorting options:\n1. Descending\n2. Ascending")
+	fmt.Println("\nSize sorting options:\n1. Descending\n2. Ascending")
 	for {
 		fmt.Println()
 		fmt.Println("Enter a sorting option:")
@@ -178,13 +140,65 @@ func getSortOption() int {
 	}
 }
 
-func inputClosure() func() string {
-	reader := bufio.NewReader(os.Stdin)
-	return func() string {
-		line, _ := reader.ReadString('\n')
-		line = strings.TrimSpace(line)
-		return line
+func handleDuplicates(list map[int][]string, sortOption int) map[int]string {
+	sizes := make(map[int]map[string][]string)
+	for size, filePaths := range list {
+		sizes[size] = make(map[string][]string)
+		for _, filePath := range filePaths {
+			hash := fmt.Sprintf("%x", fileHash(filePath))
+			sizes[size][hash] = append(sizes[size][hash], filePath)
+		}
 	}
+
+	cnt := 1
+	filesByOrder := make(map[int]string)
+	sortedKeys := getSortedKeys(sizes, sortOption)
+	for _, size := range sortedKeys {
+		writeSize := true
+		for hash, filePaths := range sizes[size] {
+			if len(filePaths) < 2 {
+				continue
+			}
+			if writeSize {
+				fmt.Println(size, "bytes")
+				writeSize = false
+			}
+			fmt.Println("Hash:", hash)
+			for _, filePath := range filePaths {
+				fmt.Printf("%d. %s\n", cnt, filePath)
+				filesByOrder[cnt] = filePath
+				cnt++
+			}
+		}
+		fmt.Println()
+	}
+
+	return filesByOrder
+}
+
+func printFiles(list map[int][]string, sortOption int) {
+	fmt.Println()
+	sortedKeys := getSortedKeys(list, sortOption)
+	for _, size := range sortedKeys {
+		fmt.Println(size, "bytes")
+		for _, filePath := range list[size] {
+			fmt.Println(filePath)
+		}
+		fmt.Println("")
+	}
+}
+
+func getSortedKeys[T any](arr map[int]T, sortOption int) []int {
+	sortedKeys := make([]int, 0)
+	for size := range arr {
+		sortedKeys = append(sortedKeys, size)
+	}
+	if sortOption == 1 {
+		sort.Sort(sort.Reverse(sort.IntSlice(sortedKeys)))
+	} else {
+		sort.Ints(sortedKeys)
+	}
+	return sortedKeys
 }
 
 func walkDir(fileFormat string) map[int][]string {
@@ -215,25 +229,4 @@ func walkDir(fileFormat string) map[int][]string {
 		fmt.Println(err)
 	}
 	return list
-}
-
-func printMap(list map[int][]string, sortingOption int) {
-	keys := make([]int, 0, len(list))
-	for k := range list {
-		keys = append(keys, k)
-	}
-
-	if sortingOption == 2 {
-		sort.Ints(keys)
-	} else {
-		sort.Sort(sort.Reverse(sort.IntSlice(keys)))
-	}
-
-	for _, size := range keys {
-		fmt.Println(size, "bytes")
-		for i := range list[size] {
-			fmt.Println(list[size][i])
-		}
-		fmt.Println("")
-	}
 }
