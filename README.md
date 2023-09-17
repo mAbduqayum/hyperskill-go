@@ -1,7 +1,8 @@
 # Hyperskill Go Projects 🚀
 
-This repository contains a collection of projects developed as part of the Hyperskill Go track. Each project is a
-standalone Go application that demonstrates various programming concepts and techniques in the Go language.
+This repository contains a collection of projects developed as part of the Hyperskill Go track.
+<br/>
+Each project is a standalone Go application that demonstrates various programming concepts and techniques in the Go language.
 ☕️🤖🧬📝🔐🔍📒🎓📁🧮
 
 ## 🎯 Project Objective
