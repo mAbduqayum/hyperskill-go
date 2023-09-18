@@ -3,7 +3,7 @@
 This repository contains a collection of projects developed as part of the Hyperskill Go track.
 <br/>
 Each project is a standalone Go application that demonstrates various programming concepts and techniques in the Go language.
-☕️🤖🧬📝🔐🔍📒🎓📁🧮
+☕️🤖🚫🧬📝🔐🔍📒🎓📁🧮
 
 ## 🎯 Project Objective
     
@@ -18,7 +18,7 @@ project is a standalone application that demonstrates various programming concep
 2. ### Simple Chatty Bot 🤖
     An interactive chatbot that can engage in basic conversations with the user.
 
-3. ### Obscene Vocabulary Checker 
+3. ### Obscene Vocabulary Checker 🚫
     A tool to check and filter out obscene words from a given text.
 
 4. ### Game of Life 🧬
