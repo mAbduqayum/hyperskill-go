@@ -66,10 +66,10 @@ func (m *CoffeeMachine) purchase() {
 		"3 - cappuccino\n" +
 		"4 - qandchoy")
 	item := readValue("Enter your choice:")
-	m.makeCoffee(item)
+	m.makeBeverage(item)
 }
 
-func (m *CoffeeMachine) makeCoffee(item int) {
+func (m *CoffeeMachine) makeBeverage(item int) {
 	recipe, ok := m.recipes[item]
 	if !ok {
 		fmt.Println("Unknown beverage type!")
