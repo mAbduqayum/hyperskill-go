@@ -1,119 +1,96 @@
-//package _4_game_of_life
-
 package main
 
 import (
-	"bufio"
+	"flag"
 	"fmt"
 	"math/rand"
-	"os"
-	"strconv"
-	"strings"
 	"time"
 )
 
-type World [][]bool
+type World struct {
+	cells [][]bool
+	size  int
+}
 
 const (
-	Dead  = " "
-	Alive = "O"
+	deadSymbol  = " "
+	aliveSymbol = "O"
 )
 
 func main() {
-	scanner := bufio.NewScanner(os.Stdin)
-	var seed int64
-	var size, generation int
-	seed = 1
-	generation = 50
+	size := flag.Int("size", 10, "Size of the world")
+	seed := flag.Int64("seed", 1, "Seed for random generation")
+	generations := flag.Int("gens", 50, "Number of generations")
+	flag.Parse()
 
-	// Scan for the first line that contains n and seed
-	if scanner.Scan() {
-		parts := strings.Fields(scanner.Text())
-		size, _ = strconv.Atoi(parts[0])
-		//seed, _ = strconv.ParseInt(parts[1], 10, 64)
-		//generation, _ = strconv.Atoi(parts[2])
-	}
-
-	world := generateWorld(size, seed)
-	for i := 1; i <= generation; i++ {
-		world = nextGeneration(world)
-		fmt.Printf("Generation #%d\n", i)
-		beautify(world)
-		time.Sleep(300 * time.Millisecond)
-		fmt.Print("\033[H\033[2J")
-	}
-	beautify(world)
+	world := NewWorld(*size, *seed)
+	RunGame(world, *generations)
 }
 
-func beautify(world World) {
-	for _, row := range world {
-		for _, r := range row {
-			if r {
-				fmt.Print(Alive)
+func NewWorld(size int, seed int64) *World {
+	randSource := rand.New(rand.NewSource(time.Now().UnixNano() + seed))
+	cells := make([][]bool, size)
+	for i := range cells {
+		cells[i] = make([]bool, size)
+		for j := range cells[i] {
+			cells[i][j] = randSource.Intn(2) == 1
+		}
+	}
+	return &World{cells, size}
+}
+
+func RunGame(world *World, generations int) {
+	for i := 1; i <= generations; i++ {
+		world.Display()
+		world.Evolve()
+		time.Sleep(300 * time.Millisecond)
+		ClearScreen()
+	}
+	world.Display()
+}
+
+func (w *World) Display() {
+	for _, row := range w.cells {
+		for _, alive := range row {
+			if alive {
+				fmt.Print(aliveSymbol)
 			} else {
-				fmt.Print(Dead)
+				fmt.Print(deadSymbol)
 			}
 		}
 		fmt.Println()
 	}
 }
 
-func generateWorld(size int, seed int64) World {
-	rnd := rand.New(rand.NewSource(time.Now().UnixNano() + seed))
-	world := make(World, size)
-	for i := 0; i < size; i++ {
-		world[i] = make([]bool, size)
-		for j := 0; j < size; j++ {
-			world[i][j] = rnd.Intn(2) == 1
+func (w *World) Evolve() {
+	newCells := make([][]bool, w.size)
+	for i := range w.cells {
+		newCells[i] = make([]bool, w.size)
+		for j := range w.cells[i] {
+			aliveNeighbors := w.countAliveNeighbors(i, j)
+			newCells[i][j] = w.cells[i][j] && (aliveNeighbors == 2 || aliveNeighbors == 3) ||
+				!w.cells[i][j] && aliveNeighbors == 3
 		}
 	}
-	return world
+	w.cells = newCells
 }
 
-func nextGeneration(world World) World {
-	nextWorld := make(World, len(world))
-	for i, row := range world {
-		nextWorld[i] = make([]bool, len(world))
-		for j, r := range row {
-			neighbors := countNeighbors(world, i, j)
-			nextWorld[i][j] = false
-			if r && (neighbors == 2 || neighbors == 3) {
-				nextWorld[i][j] = true
+func (w *World) countAliveNeighbors(x, y int) int {
+	count := 0
+	for dx := -1; dx <= 1; dx++ {
+		for dy := -1; dy <= 1; dy++ {
+			if dx == 0 && dy == 0 {
+				continue
 			}
-			if !r && neighbors == 3 {
-				nextWorld[i][j] = true
+			nx, ny := x+dx, y+dy
+			if nx >= 0 && nx < w.size && ny >= 0 && ny < w.size && w.cells[nx][ny] {
+				count++
 			}
 		}
 	}
-	return nextWorld
+	return count
 }
 
-func countNeighbors(world World, x, y int) int {
-	boundary := len(world) - 1
-	cnt := 0
-	if x > 0 && y > 0 && world[x-1][y-1] {
-		cnt++
-	}
-	if x > 0 && world[x-1][y] {
-		cnt++
-	}
-	if x > 0 && y < boundary && world[x-1][y+1] {
-		cnt++
-	}
-	if y > 0 && world[x][y-1] {
-		cnt++
-	}
-	if y < boundary && world[x][y+1] {
-		cnt++
-	}
-	if x < boundary && y > 0 && world[x+1][y-1] {
-		cnt++
-	}
-	if x < boundary && world[x+1][y] {
-		cnt++
-	}
-	if x < boundary && y < boundary && world[x+1][y+1] {
-		cnt++
-	}
-	return cnt
+func ClearScreen() {
+	fmt.Print("\033[H\033[2J")
 }
