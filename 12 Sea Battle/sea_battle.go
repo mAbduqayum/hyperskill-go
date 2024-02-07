@@ -9,28 +9,22 @@ import (
 )
 
 func main() {
-	t, _ := strconv.Atoi(input())
-	result := make([]bool, t)
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Scan()
+	t, _ := strconv.Atoi(scanner.Text())
 	for i := 0; i < t; i++ {
-		ships := readShips()
-		result[i] = isValid(ships)
-	}
-	for _, v := range result {
-		printResult(v)
+		scanner.Scan()
+		ships := parseShips(scanner.Text())
+		printResult(isValid(ships))
 	}
 }
 
-func input() string {
-	reader := bufio.NewReader(os.Stdin)
-	line, _ := reader.ReadString('\n')
-	return strings.TrimSpace(line)
-}
-
-func readShips() []int {
-	raw := strings.Fields(input())
+func parseShips(input string) []int {
+	raw := strings.Fields(input)
 	result := make([]int, len(raw))
 	for i, v := range raw {
-		result[i], _ = strconv.Atoi(v)
+		num, _ := strconv.Atoi(v)
+		result[i] = num
 	}
 	return result
 }
