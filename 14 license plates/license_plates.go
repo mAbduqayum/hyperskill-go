@@ -17,11 +17,11 @@ func main() {
 
 	var t int
 	fmt.Fscan(in, &t)
-	licensesLines := make([]string, t)
+	var line string
 	for i := 0; i < t; i++ {
-		fmt.Fscan(in, &licensesLines[i])
-		matched, matches := checkLicensesLine(licensesLines[i], []string{})
-		if matched {
+		fmt.Fscan(in, &line)
+		matches, ok := checkLicensesLine(line)
+		if ok {
 			fmt.Fprintln(out, strings.Join(matches, " "))
 		} else {
 			fmt.Fprintln(out, "-")
@@ -29,28 +29,16 @@ func main() {
 	}
 }
 
-func checkLicensesLine(licenses string, matches []string) (bool, []string) {
-	if len(licenses) < 4 {
-		return false, []string{}
-	}
-	re1 := regexp.MustCompile(`^[A-Z]\d\d[A-Z][A-Z]`) // len 5
-	re2 := regexp.MustCompile(`^[A-Z]\d[A-Z][A-Z]`)   // len 4
-
-	match1 := re1.FindString(licenses)
-	if len(match1) == 5 {
-		matches = append(matches, match1)
-		if len(licenses) == 5 {
-			return true, matches
+func checkLicensesLine(licenses string) ([]string, bool) {
+	regex := regexp.MustCompile(`^([A-Z]\d\d[A-Z][A-Z]|[A-Z]\d[A-Z][A-Z])`)
+	var matches []string
+	for len(licenses) > 0 {
+		match := regex.FindString(licenses)
+		if match == "" {
+			return nil, false
 		}
-		return checkLicensesLine(licenses[5:], matches)
+		matches = append(matches, match)
+		licenses = licenses[len(match):]
 	}
-	match2 := re2.FindString(licenses)
-	if len(match2) == 4 {
-		matches = append(matches, match2)
-		if len(licenses) == 4 {
-			return true, matches
-		}
-		return checkLicensesLine(licenses[4:], matches)
-	}
-	return false, []string{}
+	return matches, true
 }
