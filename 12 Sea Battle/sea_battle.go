@@ -48,8 +48,8 @@ func isValid(ships []int) bool {
 
 func printResult(isValid bool) {
 	if isValid {
-		fmt.Print("YES")
+		fmt.Println("YES")
 	} else {
-		fmt.Print("NO")
+		fmt.Println("NO")
 	}
 }
