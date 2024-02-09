@@ -10,7 +10,7 @@ Your program should be able to process a sequence of character inputs (input str
 
 - The letters `L` and `R` represent the left and right arrow keys, respectively. They move the cursor one position to the left or right. If there is no character in the corresponding direction, the operation is ignored. Note that the cursor, in any case, remains in the same line.
 - The letters `U` and `D` represent the up and down arrow keys. They move the cursor up one line or down one line. If there is no line in the corresponding direction, the operation is ignored. If a line exists, but there is no required position in it, the cursor moves to the end of the line.
-- The letters `H` and `E` represent the `Home` and `End` keys. They move the cursor to the beginning or the end of the current line.
+- The letters `B` and `E` represent the `Home` and `End` keys. They move the cursor to the beginning or the end of the current line.
 - The letter `N` represents pressing the `Enter` key — it inserts a new line. If the cursor is not at the end of the current line, it splits, and part after the cursor moves to the new line. The cursor after this operation is at the beginning of the new line.
 
 You can imagine that this simulates the sequence of keystrokes in a text editor where the cursor is positioned between two characters of the line (or at the beginning or end of the line).

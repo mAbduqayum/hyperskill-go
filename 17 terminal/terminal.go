@@ -22,57 +22,61 @@ func main() {
 }
 
 func processTest() {
-	var line string
-	fmt.Fscanln(in, &line)
-	terminal(line)
+	var input string
+	fmt.Fscan(in, &input)
+	terminal(input)
 }
 
-func terminal(line string) {
-	x := 0
-	y := 0
-	rez := make([][]rune, 0)
-	for _, s := range line {
-		switch s {
+func terminal(input string) {
+	x, y := 0, 0
+	lines := make([][]rune, 1) // Start with one empty input
+
+	for _, char := range input {
+		switch char {
 		case 'L':
 			if x > 0 {
 				x--
 			}
-			continue
 		case 'R':
-			if y < len(rez[y]) {
+			if x < len(lines[y]) {
 				x++
 			}
-			continue
 		case 'U':
 			if y > 0 {
 				y--
+				if x > len(lines[y]) {
+					x = len(lines[y])
+				}
 			}
-			continue
 		case 'D':
-			if y < len(rez)-1 {
+			if y < len(lines)-1 {
 				y++
+				if x > len(lines[y]) {
+					x = len(lines[y])
+				}
 			}
-			continue
-		case 'H':
+		case 'B':
 			x = 0
-			continue
 		case 'E':
-			x = len(rez[y])
-			continue
+			x = len(lines[y])
 		case 'N':
-			var nextLine []rune
-			if x < len(rez[y])-1 {
-				rez[y] = rez[y][:x]
-				nextLine = rez[y][x:]
-			}
-			others := rez[y+1]
-			rez = append(rez[:y], append(nextLine))
-			rez = append(rez, others)
+			nextLine := append([]rune{}, lines[y][x:]...)
+			lines[y] = lines[y][:x]
+			lines = append(lines[:y+1], append([][]rune{nextLine}, lines[y+1:]...)...)
+			y++
+			x = 0
 		default:
-			rez[y] = append(rez[y], s)
+			if x == len(lines[y]) {
+				lines[y] = append(lines[y], char)
+			} else {
+				lines[y] = append(lines[y][:x], append([]rune{char}, lines[y][x:]...)...)
+			}
 			x++
 		}
 	}
-	fmt.Println(rez)
+
+	for _, line := range lines {
+		fmt.Fprintln(out, string(line))
+	}
 	fmt.Fprintln(out, "-")
 }
