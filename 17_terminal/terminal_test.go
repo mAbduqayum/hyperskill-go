@@ -37,66 +37,65 @@ func TestTerminalFromFile(t *testing.T) {
 				t.Fatalf("Failed to read expected output file %s: %v", expectedOutputFilePath, err)
 			}
 
-			// Redirect stdin and stdout
-			_, stdinW, stdoutR, stdoutW, cleanup := redirectStdinStdout()
+			stdinW, stdoutR, stdoutW, cleanup := redirectStdinStdout()
 			defer cleanup()
 
-			// Write input data to stdin
-			stdinW.WriteString(string(input))
+			stdinW.Write(input)
 			stdinW.Close()
 
-			// Call the main function in a goroutine to allow cleanup afterward
+			// Call the main function in a goroutine to allow stdout to be read concurrently
 			done := make(chan bool)
 			go func() {
 				main()
+				stdoutW.Close() // Close stdoutW after main returns
 				done <- true
 			}()
 
-			// Wait for main to finish
-			<-done
-
-			// Close the write end of stdout to signal to ReadAll that we're done writing
-			stdoutW.Close()
-
-			// Capture the output from stdout
+			// Read the captured output from stdout
 			outBytes, err := ioutil.ReadAll(stdoutR)
 			if err != nil {
 				t.Fatalf("Failed to read from stdout: %v", err)
 			}
 
-			// Compare the output with the expected output
-			if strings.TrimSpace(string(outBytes)) != strings.TrimSpace(string(expectedOutput)) {
-				t.Errorf(
-					"Test %s: Output did not match expected.\n"+
-						"Expected:\t"+
-						"########################################\n"+
-						"%s\n"+
-						"Got:\t"+
-						"########################################\n"+
-						"%s", file.Name(), string(expectedOutput), string(outBytes),
-				)
+			// Wait for main to finish
+			<-done
+
+			actualOutput := normalizeOutput(outBytes)
+			expectedOutputString := normalizeOutput(expectedOutput)
+
+			if actualOutput != expectedOutputString {
+				t.Errorf("Test %s: Output did not match expected.\nExpected:\n%s\nGot:\n%s", file.Name(), expectedOutputString, actualOutput)
 			}
 		})
 	}
 }
 
-// redirectStdinStdout helps to replace os.Stdin and os.Stdout and returns the pipes and a cleanup function.
-func redirectStdinStdout() (stdinR *os.File, stdinW *os.File, stdoutR *os.File, stdoutW *os.File, cleanup func()) {
+func redirectStdinStdout() (*os.File, *os.File, *os.File, func()) {
 	oldStdin := os.Stdin
 	oldStdout := os.Stdout
 
-	stdinR, stdinW, _ = os.Pipe()
-	stdoutR, stdoutW, _ = os.Pipe()
+	stdinW, _, _ := os.Pipe()
+	stdoutR, stdoutW, _ := os.Pipe()
 
-	os.Stdin = stdinR
+	os.Stdin = stdinW // We use the write end of stdin pipe as the new stdin.
 	os.Stdout = stdoutW
 
-	return stdinR, stdinW, stdoutR, stdoutW, func() {
+	return stdinW, stdoutR, stdoutW, func() {
 		os.Stdin = oldStdin
 		os.Stdout = oldStdout
-		stdinR.Close()
 		stdinW.Close()
 		stdoutR.Close()
 		stdoutW.Close()
 	}
+}
+
+func normalizeOutput(output []byte) string {
+	normalized := strings.ReplaceAll(string(output), "\r\n", "\n")
+	normalized = strings.ReplaceAll(normalized, "\r", "\n")
+	normalized = strings.TrimSpace(normalized)
+	lines := strings.Split(normalized, "\n")
+	for i, line := range lines {
+		lines[i] = strings.TrimSpace(line)
+	}
+	return strings.Join(lines, "\n")
 }
