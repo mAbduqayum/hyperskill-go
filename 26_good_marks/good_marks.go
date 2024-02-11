@@ -33,19 +33,40 @@ func processTest() {
 			grid[i][j] = int(char - '0')
 		}
 	}
-	rowSummary := make([]int, m)
+	findIJ(n, m, grid)
+}
+
+func findIJ(n int, m int, grid [][]int) {
+	rowSummary := make([]int, n)
 	for i := 0; i < n; i++ {
 		rowSummary[i] = smallest(grid[i]...)
 	}
-	colSummary := make([]int, n)
-	for i := 0; i < n; i++ {
-		colSummary[i] = 5
-		for j := 0; j < m; j++ {
+	colSummary := make([]int, m)
+	for j := 0; j < m; j++ {
+		colSummary[j] = 5
+		for i := 0; i < n; i++ {
 			colSummary[j] = smallest(colSummary[j], grid[i][j])
 		}
 	}
-	//worst := gridSmallest(rowSummary, colSummary)
+	worst := gridSmallest(rowSummary, colSummary)
+	r := smallestIndex(rowSummary...)
+	c := smallestIndex(colSummary...)
 
+	for i := 0; i < n; i++ {
+		w := gridSmallestWithoutIJ(rowSummary, colSummary, i, c)
+		if w > worst {
+			fmt.Fprintln(out, i, c)
+			return
+		}
+	}
+
+	for j := 0; j < m; j++ {
+		w := gridSmallestWithoutIJ(rowSummary, colSummary, r, j)
+		if w > worst {
+			fmt.Fprintln(out, r, j)
+			return
+		}
+	}
 }
 
 func smallest(nums ...int) int {
@@ -53,6 +74,16 @@ func smallest(nums ...int) int {
 	for _, num := range nums {
 		if num < rez {
 			rez = num
+		}
+	}
+	return rez
+}
+
+func smallestIndex(nums ...int) int {
+	rez := 0
+	for i, num := range nums {
+		if num < nums[rez] {
+			rez = i
 		}
 	}
 	return rez
