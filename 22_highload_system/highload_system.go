@@ -60,5 +60,6 @@ func isValid(s string) bool {
 		}
 		prevChar = char
 	}
-	return prevChar == 'D' || prevChar == 'C'
+	lastChar := prevChar
+	return lastChar == 'D'
 }
