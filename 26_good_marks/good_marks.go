@@ -85,6 +85,20 @@ func smallest(nums ...int) int {
 	return rez
 }
 
+func smallestAndIndexes(nums ...int) (int, []int) {
+	rez := nums[0]
+	indexes := []int{0}
+	for i, num := range nums {
+		if num < rez {
+			rez = num
+			indexes = []int{i}
+		} else if num == rez {
+			indexes = append(indexes, i)
+		}
+	}
+	return rez, indexes
+}
+
 func smallestIndex(nums ...int) int {
 	rez := 0
 	for i, num := range nums {
