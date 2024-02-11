@@ -52,21 +52,27 @@ func findIJ(n int, m int, grid [][]int) {
 	r := smallestIndex(rowSummary...)
 	c := smallestIndex(colSummary...)
 
-	for i := 0; i < n; i++ {
-		w := gridSmallestWithoutIJ(rowSummary, colSummary, i, c)
-		if w > worst {
-			fmt.Fprintln(out, i, c)
-			return
-		}
-	}
+	x, y := -1, -1
 
+	// strike r against one of c and check if it's better
 	for j := 0; j < m; j++ {
 		w := gridSmallestWithoutIJ(rowSummary, colSummary, r, j)
 		if w > worst {
-			fmt.Fprintln(out, r, j)
-			return
+			worst = w
+			x, y = r, j
 		}
 	}
+
+	// strike c against one of r and check if it's better
+	for i := 0; i < n; i++ {
+		w := gridSmallestWithoutIJ(rowSummary, colSummary, i, c)
+		if w > worst {
+			worst = w
+			x, y = i, c
+		}
+	}
+
+	fmt.Fprintln(out, x+1, y+1)
 }
 
 func smallest(nums ...int) int {
