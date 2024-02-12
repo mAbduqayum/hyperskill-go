@@ -26,6 +26,7 @@ func NewDoublyLinkedList(s string) *DoublyLinkedList[rune] {
 	for _, runeValue := range s {
 		dll.Append(runeValue)
 	}
+	dll.Size = len(s)
 	return dll
 }
 
@@ -39,6 +40,7 @@ func (dll *DoublyLinkedList[T]) Append(value T) {
 		newNode.Prev = dll.Tail
 		dll.Tail = newNode
 	}
+	dll.Size++
 }
 
 func (dll *DoublyLinkedList[T]) DeleteNode(node *Node[T]) {
@@ -55,7 +57,7 @@ func (dll *DoublyLinkedList[T]) DeleteNode(node *Node[T]) {
 			// If the list becomes empty, also update the tail
 			dll.Tail = nil
 		}
-	} else {
+	} else if node.Prev != nil {
 		// Update the previous node's next pointer
 		node.Prev.Next = node.Next
 	}
@@ -77,6 +79,22 @@ func (dll *DoublyLinkedList[T]) DeleteNode(node *Node[T]) {
 	// Clear the pointers of the node to help with garbage collection
 	node.Next = nil
 	node.Prev = nil
+
+	dll.Size-- // Decrement the size with each node removal
+}
+
+func (dll *DoublyLinkedList[T]) Clone() *DoublyLinkedList[T] {
+	clone := &DoublyLinkedList[T]{} // Create a new, empty list
+	current := dll.Head             // Start with the head of the original list
+
+	// Iterate through the original list
+	for current != nil {
+		// Append the value of each node to the cloned list
+		clone.Append(current.Value)
+		current = current.Next
+	}
+
+	return clone
 }
 
 func (dll *DoublyLinkedList[T]) Iterate(f func(value T)) {
@@ -85,6 +103,15 @@ func (dll *DoublyLinkedList[T]) Iterate(f func(value T)) {
 		f(current.Value)
 		current = current.Next
 	}
+}
+
+func (dll *DoublyLinkedList[T]) Display() {
+	current := dll.Head
+	for current != nil {
+		fmt.Fprintf(out, "%c", current.Value)
+		current = current.Next
+	}
+	fmt.Fprintln(out)
 }
 
 func main() {
@@ -108,9 +135,9 @@ func processTest() {
 	dll := NewDoublyLinkedList(s)
 	rez := isValidSequence(dll)
 	if rez {
-		fmt.Fprintln(out, "YES")
+		fmt.Fprintln(out, "Yes")
 	} else {
-		fmt.Fprintln(out, "NO")
+		fmt.Fprintln(out, "No")
 	}
 }
 
@@ -121,30 +148,100 @@ func isValidSequence(dll *DoublyLinkedList[rune]) bool {
 	if dll.Tail.Value == 'X' {
 		return false
 	}
-	for dll.Head.Value == 'Y' {
-		current := dll.Head
+	for dll.Head != nil && dll.Head.Value == 'Y' {
+		foundZ := false
+		current := dll.Head.Next
 		for current != nil {
 			if current.Value == 'Z' {
+				foundZ = true
 				dll.DeleteNode(current)
+				dll.DeleteNode(dll.Head)
 				break
 			}
 			current = current.Next
 		}
+		if !foundZ {
+			return false
+		}
 	}
-	for dll.Tail.Value == 'Y' {
-		current := dll.Tail
+
+	for dll.Tail != nil && dll.Tail.Value == 'Y' {
+		foundX := false
+		current := dll.Tail.Prev
 		for current != nil {
 			if current.Value == 'X' {
+				foundX = true
 				dll.DeleteNode(current)
+				dll.DeleteNode(dll.Tail)
 				break
 			}
 			current = current.Prev
 		}
+		if !foundX {
+			break
+		}
 	}
-	current := dll.Head
-	for current != nil {
-		fmt.Fprintln(out, string(current.Value))
-		current = current.Next
+
+	for dll.Size > 4 && dll.Tail.Value == 'Z' {
+		curr := dll.Tail.Prev
+		foundNonZ := false
+		foundZ := false
+		var nonZ *Node[rune]
+		for curr != nil {
+			if curr.Value == 'Z' {
+				foundZ = true
+			} else if !foundNonZ {
+				foundNonZ = true
+				nonZ = curr
+			}
+			if foundZ && foundNonZ {
+				dll.DeleteNode(dll.Tail)
+				dll.DeleteNode(nonZ)
+				break
+			}
+			curr = curr.Prev
+		}
+		if !foundZ {
+			break
+		}
 	}
-	return true
+
+	if dll.Size == 0 {
+		return true
+	}
+
+	if dll.Size == 2 {
+		h := dll.Head.Value
+		t := dll.Tail.Value
+		ht := string(h) + string(t)
+		return ht == "XY" || ht == "XZ" || ht == "YZ"
+	}
+
+	if dll.Size == 4 {
+		if dll.Head.Value == 'X' && dll.Tail.Value == 'Z' {
+			i2 := dll.Head.Next.Value
+			i3 := dll.Head.Next.Next.Value
+			return string(i2)+string(i3) != "XX"
+		}
+		return isValidSequence(dll)
+	}
+
+	clonedDLL := dll.Clone()
+	clonedDLL.DeleteNode(clonedDLL.Tail)
+	curr := clonedDLL.Tail
+	for curr.Value != 'X' {
+		curr = curr.Prev
+	}
+	clonedDLL.DeleteNode(curr)
+	if isValidSequence(clonedDLL) {
+		return true
+	}
+
+	dll.DeleteNode(dll.Tail)
+	curr = dll.Tail
+	for curr.Value != 'Y' {
+		curr = curr.Prev
+	}
+	dll.DeleteNode(curr)
+	return isValidSequence(dll)
 }
