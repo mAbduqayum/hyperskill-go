@@ -47,62 +47,27 @@ func (dll *DoublyLinkedList[T]) DeleteNode(node *Node[T]) {
 	if node == nil {
 		return
 	}
-
-	// If the node to delete is the head, update the head pointer
-	if node == dll.Head {
-		dll.Head = node.Next
-		if dll.Head != nil { // If the list is not empty after deletion
-			dll.Head.Prev = nil
-		} else {
-			// If the list becomes empty, also update the tail
-			dll.Tail = nil
-		}
-	} else if node.Prev != nil {
-		// Update the previous node's next pointer
+	if node.Prev != nil {
 		node.Prev.Next = node.Next
+	} else {
+		dll.Head = node.Next
 	}
-
-	// If the node to delete is the tail, update the tail pointer
-	if node == dll.Tail {
-		dll.Tail = node.Prev
-		if dll.Tail != nil { // If the list is not empty after deletion
-			dll.Tail.Next = nil
-		} else {
-			// If the list becomes empty, also update the head
-			dll.Head = nil
-		}
-	} else if node.Next != nil {
-		// Update the next node's previous pointer
+	if node.Next != nil {
 		node.Next.Prev = node.Prev
+	} else {
+		dll.Tail = node.Prev
 	}
-
-	// Clear the pointers of the node to help with garbage collection
-	node.Next = nil
-	node.Prev = nil
-
-	dll.Size-- // Decrement the size with each node removal
+	dll.Size--
 }
 
 func (dll *DoublyLinkedList[T]) Clone() *DoublyLinkedList[T] {
-	clone := &DoublyLinkedList[T]{} // Create a new, empty list
-	current := dll.Head             // Start with the head of the original list
-
-	// Iterate through the original list
+	clone := &DoublyLinkedList[T]{}
+	current := dll.Head
 	for current != nil {
-		// Append the value of each node to the cloned list
 		clone.Append(current.Value)
 		current = current.Next
 	}
-
 	return clone
-}
-
-func (dll *DoublyLinkedList[T]) Iterate(f func(value T)) {
-	current := dll.Head
-	for current != nil {
-		f(current.Value)
-		current = current.Next
-	}
 }
 
 func (dll *DoublyLinkedList[T]) Display() {
@@ -132,7 +97,7 @@ func processTest() {
 
 	var s string
 	fmt.Fscan(in, &s)
-	dll := NewDoublyLinkedList(s)
+	dll := NewDoublyLinkedList[rune](s)
 	rez := isValidSequence(dll)
 	if rez {
 		fmt.Fprintln(out, "Yes")
@@ -142,9 +107,10 @@ func processTest() {
 }
 
 func isValidSequence(dll *DoublyLinkedList[rune]) bool {
-	if dll.Head.Value == 'Z' {
+	if dll.Head != nil && dll.Head.Value == 'Z' || dll.Tail != nil && dll.Tail.Value == 'X' {
 		return false
 	}
+
 	if dll.Tail.Value == 'X' {
 		return false
 	}
