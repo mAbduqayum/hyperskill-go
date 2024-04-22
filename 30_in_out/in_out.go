@@ -12,7 +12,7 @@ var (
 )
 
 func main() {
-	//defer out.Flush()
+	defer out.Flush()
 	processTest()
 }
 

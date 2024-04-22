@@ -1,85 +1,135 @@
 package main_test
 
 import (
-	"bufio"
+	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"strings"
 	"testing"
 )
 
 const (
-	fileName     = "in_out.go"
 	testDir      = "tests"
 	outputSuffix = ".out"
 	answerSuffix = ".a"
 )
 
-var (
-	reInputFile = regexp.MustCompile(`^\d+$`)
-)
+var reInputFile = regexp.MustCompile(`^\d+$`)
 
-func TestProgram(t *testing.T) {
-	testFiles, err := os.ReadDir(testDir)
+func TestIt(t *testing.T) {
+	fileName, err := findMainFile()
 	if err != nil {
-		t.Fatalf("Failed to read test directory: %v", err)
+		t.Fatalf("Failed to find main file: %v", err)
 	}
-	for _, testFile := range testFiles {
-		if !reInputFile.MatchString(testFile.Name()) {
-			continue // Skip files that don't match the regex
-		}
-		t.Run(testFile.Name(), func(t *testing.T) {
-			testInputPath := filepath.Join(testDir, testFile.Name())
-			testOutputPath := testInputPath + answerSuffix
-			testInput, err := os.Open(testInputPath)
+
+	testCases, err := getTestCases(testDir)
+	if err != nil {
+		t.Fatalf("Failed to get test cases: %v", err)
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			actualOutput, err := runMainPackage(fileName, tc.input)
 			if err != nil {
-				t.Fatalf("Failed to open test input file %s: %v", testInputPath, err)
+				t.Fatalf("Failed to run main package: %v", err)
 			}
-			defer testInput.Close()
-			testOutput, err := os.Open(testOutputPath)
-			if err != nil {
-				t.Fatalf("Failed to open test output file %s: %v", testOutputPath, err)
+
+			if !bytes.Equal(actualOutput, tc.expectedOutput) {
+				writeOutputToFile(t, tc.name, actualOutput)
+				t.Fatalf("Test case %s failed:\nExpected output:\n%s\nActual output:\n%s", tc.name, tc.expectedOutput, actualOutput)
 			}
-			defer testOutput.Close()
-			cmd := exec.Command("go", "run", fileName)
-			cmd.Stdin = testInput
-			cmd.Stderr = os.Stderr
-			output, err := cmd.Output()
-			if err != nil {
-				t.Fatalf("Failed to run program for test %s: %v", testFile.Name(), err)
-			}
-			scannerOutput := bufio.NewScanner(strings.NewReader(string(output)))
-			scannerExpected := bufio.NewScanner(testOutput)
-			var lineNumber int
-			for scannerOutput.Scan() && scannerExpected.Scan() {
-				lineNumber++
-				expected := scannerExpected.Text()
-				actual := scannerOutput.Text()
-				if actual != expected {
-					saveProblematicFiles(testFile.Name(), output)
-					t.Errorf("Test %s: Expected %s, found %s at line %d of %s",
-						testFile.Name(), expected, actual, lineNumber, testOutputPath)
-				}
-			}
-			if err := scannerOutput.Err(); err != nil {
-				t.Fatalf("Failed to scan program output for test %s: %v", testFile.Name(), err)
-			}
-			if err := scannerExpected.Err(); err != nil {
-				t.Fatalf("Failed to scan expected output for test %s: %v", testFile.Name(), err)
-			}
-			t.Logf("Test Passed: %s", testFile.Name())
 		})
 	}
 }
-func saveProblematicFiles(fileName string, output []byte) {
-	outputPath := filepath.Join(testDir, fileName+outputSuffix)
-	err := os.WriteFile(outputPath, output, 0644)
+
+func findMainFile() (string, error) {
+	files, err := os.ReadDir(".")
 	if err != nil {
-		fmt.Printf("Failed to save program output to %s: %v\n", outputPath, err)
-		return
+		return "", err
 	}
-	fmt.Printf("Program output saved as %s\n", outputPath)
+
+	for _, file := range files {
+		if !file.IsDir() && filepath.Ext(file.Name()) == ".go" {
+			content, err := os.ReadFile(file.Name())
+			if err == nil && bytes.Contains(content, []byte("package main")) {
+				return file.Name(), nil
+			}
+		}
+	}
+
+	return "", fmt.Errorf("no Go file with 'package main' found in the current directory")
+}
+
+type testCase struct {
+	name           string
+	input          []byte
+	expectedOutput []byte
+}
+
+func getTestCases(dir string) ([]testCase, error) {
+	testFiles, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	var testCases []testCase
+	for _, file := range testFiles {
+		if !reInputFile.MatchString(file.Name()) {
+			continue
+		}
+
+		inputFile := filepath.Join(dir, file.Name())
+		answerFile := filepath.Join(dir, file.Name()+answerSuffix)
+
+		input, err := os.ReadFile(inputFile)
+		if err != nil {
+			return nil, err
+		}
+
+		expectedOutput, err := os.ReadFile(answerFile)
+		if err != nil {
+			return nil, err
+		}
+
+		testCases = append(testCases, testCase{
+			name:           file.Name(),
+			input:          input,
+			expectedOutput: expectedOutput,
+		})
+	}
+
+	return testCases, nil
+}
+
+func runMainPackage(fileName string, input []byte) ([]byte, error) {
+	cmd := exec.Command("go", "run", fileName)
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		return nil, err
+	}
+
+	go func() {
+		defer stdin.Close()
+		io.WriteString(stdin, string(input))
+	}()
+
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, err
+	}
+
+	return output, nil
+}
+
+func writeOutputToFile(t *testing.T, testName string, output []byte) {
+	outputFile := filepath.Join(testDir, testName+outputSuffix)
+	err := os.WriteFile(outputFile, output, 0644)
+	if err != nil {
+		t.Fatalf("Failed to write output to file: %v", err)
+	}
 }
