@@ -32,11 +32,7 @@ func TestIt(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			actualOutput, err := runMainPackage(fileName, tc.input)
 			assert.NoError(t, err, "Failed to run main package")
-
 			assert.Equal(t, tc.expectedOutput, actualOutput, "Test case %s failed", tc.name)
-			if !bytes.Equal(actualOutput, tc.expectedOutput) {
-				writeOutputToFile(t, tc.name, actualOutput)
-			}
 		})
 		break
 	}
@@ -119,10 +115,4 @@ func runMainPackage(fileName string, input []byte) ([]byte, error) {
 	}
 
 	return output, nil
-}
-
-func writeOutputToFile(t *testing.T, testName string, output []byte) {
-	outputFile := filepath.Join(testDir, testName+outputSuffix)
-	err := os.WriteFile(outputFile, output, 0644)
-	assert.NoError(t, err, "Failed to write output to file")
 }
