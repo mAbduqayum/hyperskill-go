@@ -15,7 +15,6 @@ import (
 
 const (
 	testDir      = "tests"
-	outputSuffix = ".out"
 	answerSuffix = ".a"
 )
 
@@ -32,7 +31,7 @@ func TestIt(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			actualOutput, err := runMainPackage(fileName, tc.input)
 			assert.NoError(t, err, "Failed to run main package")
-			assert.Equal(t, tc.expectedOutput, actualOutput, "Test case %s failed", tc.name)
+			assert.Equal(t, string(tc.expectedOutput), string(actualOutput), "Test case %s failed", tc.name)
 		})
 		break
 	}
