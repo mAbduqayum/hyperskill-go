@@ -42,27 +42,25 @@ func processTest() {
 
 	for i, s := range sortedSlots {
 		if i == 0 {
-			if s.val == 0 {
+			switch {
+			case s.val == 0:
 				s.val++
 				s.sign = '+'
-			} else if s.val > 1 {
+			case s.val > 1:
 				s.val--
 				s.sign = '-'
 			}
 			continue
 		}
 		gap := s.val - sortedSlots[i-1].val
-		if gap == 0 {
+		switch {
+		case gap == 0:
 			s.val++
 			s.sign = '+'
-			continue
-		}
-		if gap > 1 {
+		case gap > 1:
 			s.val--
 			s.sign = '-'
-			continue
-		}
-		if gap < 0 {
+		case gap < 0:
 			fmt.Fprintln(out, "x")
 			return
 		}
