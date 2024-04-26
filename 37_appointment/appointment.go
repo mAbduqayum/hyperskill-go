@@ -32,15 +32,15 @@ func processTest() {
 	var n, m int
 	fmt.Fscan(in, &n, &m)
 	slots := make([]int, m)
-	sortedslots := make([]*slot, m)
+	sortedSlots := make([]*slot, m)
 	for i := 0; i < m; i++ {
 		fmt.Fscan(in, &slots[i])
-		sortedslots[i] = &slot{i, slots[i], '0'}
+		sortedSlots[i] = &slot{i, slots[i], '0'}
 	}
 
-	sort.Slice(sortedslots, func(i, j int) bool { return sortedslots[i].val < sortedslots[j].val })
+	sort.Slice(sortedSlots, func(i, j int) bool { return sortedSlots[i].val < sortedSlots[j].val })
 
-	for i, s := range sortedslots {
+	for i, s := range sortedSlots {
 		if i == 0 {
 			if s.val == 0 {
 				s.val++
@@ -51,7 +51,7 @@ func processTest() {
 			}
 			continue
 		}
-		gap := s.val - sortedslots[i-1].val
+		gap := s.val - sortedSlots[i-1].val
 		if gap == 0 {
 			s.val++
 			s.sign = '+'
@@ -62,11 +62,25 @@ func processTest() {
 			s.sign = '-'
 			continue
 		}
+		if gap < 0 {
+			fmt.Fprintln(out, "x")
+			return
+		}
 	}
-	sort.Slice(sortedslots, func(i, j int) bool { return sortedslots[i].order < sortedslots[j].order })
+	var biggest int
+	for _, s := range sortedSlots {
+		if s.val > biggest {
+			biggest = s.val
+		}
+	}
+	if biggest > n || biggest < m {
+		fmt.Fprintln(out, "x")
+		return
+	}
+	sort.Slice(sortedSlots, func(i, j int) bool { return sortedSlots[i].order < sortedSlots[j].order })
 	var rez strings.Builder
-	for _, s := range sortedslots {
+	for _, s := range sortedSlots {
 		rez.WriteByte(s.sign)
 	}
-	fmt.Println(rez.String())
+	fmt.Fprintln(out, rez.String())
 }
