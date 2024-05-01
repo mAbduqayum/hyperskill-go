@@ -30,7 +30,7 @@ func processTest() {
 	}
 	wordsSet := arrToSet(words)
 	blackWord := words[f-1]
-	blackSubWords := subWordsMap(blackWord)
+	blackSubWords := subWordsSet(blackWord)
 	blueSubWordsMap := getSubWordsMap(words[:b])
 	withoutRight(blueSubWordsMap, blackSubWords)
 	withoutRight(blueSubWordsMap, wordsSet)
@@ -54,7 +54,7 @@ func bestResult(b map[string]int, r map[string]int) (string, int) {
 	return subWord, bestBR
 }
 
-func subWordsMap(word string) map[string]bool {
+func subWordsSet(word string) map[string]bool {
 	n := len(word)
 	rez := make(map[string]bool, n*(n+1)/2)
 	for i := 0; i < n; i++ {
@@ -76,7 +76,7 @@ func arrToSet(words []string) map[string]bool {
 func getSubWordsMap(words []string) map[string]int {
 	rez := make(map[string]int)
 	for _, w := range words {
-		subW := subWordsMap(w)
+		subW := subWordsSet(w)
 		for k := range subW {
 			if _, ok := rez[k]; ok {
 				rez[k]++
@@ -88,7 +88,7 @@ func getSubWordsMap(words []string) map[string]int {
 	return rez
 }
 
-func withoutRight[K comparable, V1 any, V2 any](mapL map[K]V1, mapR map[K]V2) {
+func withoutRight(mapL map[string]int, mapR map[string]bool) {
 	for k := range mapL {
 		if _, ok := mapR[k]; ok {
 			delete(mapL, k)
