@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"sort"
 )
 
 var (
@@ -35,33 +34,24 @@ func processTest() {
 		boxes[i] = 1 << a
 	}
 
-	sort.Slice(boxes, func(i, j int) bool {
-		return boxes[i] > boxes[j]
-	})
-
-	var trips int
-	var currentLoad int
-	skip := make([]bool, m)
-	for i, box := range boxes {
-		if skip[i] {
-			continue
-		}
-		if currentLoad+box > k {
-			for j := i + 1; j < m; j++ {
-				if !skip[j] && currentLoad+boxes[j] <= k {
-					currentLoad += boxes[j]
-					skip[j] = true
-				}
-			}
-			trips++
-			currentLoad = box
-		} else {
-			currentLoad += box
+	dp := make([]int, k+1)
+	for i := 0; i < m; i++ {
+		for j := k; j >= boxes[i]; j-- {
+			dp[j] = max(dp[j], dp[j-boxes[i]]+1)
 		}
 	}
-	if currentLoad > 0 {
-		trips++
+
+	var trips int
+	for i := 0; i <= k; i++ {
+		trips = max(trips, dp[i])
 	}
 
 	fmt.Fprintln(out, (trips+n-1)/n)
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
