@@ -11,6 +11,15 @@ var (
 	out = bufio.NewWriter(os.Stdout)
 )
 
+type ExchangeRate struct {
+	rubleToDollar float64
+	rubleToEuro   float64
+	dollarToRuble float64
+	dollarToEuro  float64
+	euroToRuble   float64
+	euroToDollar  float64
+}
+
 func main() {
 	defer out.Flush()
 	var t int
@@ -21,48 +30,84 @@ func main() {
 }
 
 func processTest() {
-	var maxDollars float64
-	var exchangeRates [3][6]int
-
+	var banks [3]ExchangeRate
 	for i := 0; i < 3; i++ {
-		fmt.Fscan(in, &exchangeRates[i][0], &exchangeRates[i][1])
-		fmt.Fscan(in, &exchangeRates[i][2], &exchangeRates[i][3])
-		fmt.Fscan(in, &exchangeRates[i][1], &exchangeRates[i][2])
-		fmt.Fscan(in, &exchangeRates[i][4], &exchangeRates[i][5])
-		fmt.Fscan(in, &exchangeRates[i][3], &exchangeRates[i][2])
-		fmt.Fscan(in, &exchangeRates[i][5], &exchangeRates[i][4])
-	}
-
-	// Get the best ruble to dollar exchange rate
-	bestRubleToDollar := 0.0
-	for i := 0; i < 3; i++ {
-		rubleToDollar := 1.0 / float64(exchangeRates[i][0])
-		if rubleToDollar > bestRubleToDollar {
-			bestRubleToDollar = rubleToDollar
+		banks[i] = ExchangeRate{
+			rubleToDollar: getProportion(),
+			rubleToEuro:   getProportion(),
+			dollarToRuble: getProportion(),
+			dollarToEuro:  getProportion(),
+			euroToRuble:   getProportion(),
+			euroToDollar:  getProportion(),
 		}
 	}
 
-	// Get the best ruble to euro to dollar exchange rate
+	bestRubleToDollar := best(
+		banks[0].rubleToDollar,
+		banks[1].rubleToDollar,
+		banks[2].rubleToDollar,
+	)
+
 	bestRubleEuroDollar := 0.0
 	for i := 0; i < 3; i++ {
 		for j := 0; j < 3; j++ {
 			if i != j {
-				rubleToEuro := 1.0 / float64(exchangeRates[i][2])
-				euroToDollar := 1.0 / float64(exchangeRates[j][5])
-				rubleEuroDollar := rubleToEuro * euroToDollar
-				if rubleEuroDollar > bestRubleEuroDollar {
-					bestRubleEuroDollar = rubleEuroDollar
+				rubleToEuro := banks[i].rubleToEuro
+				euroToDollar := banks[j].euroToDollar
+				bestRubleToDollar = best(
+					bestRubleEuroDollar,
+					rubleToEuro*euroToDollar,
+				)
+			}
+		}
+	}
+
+	bestRubleEuroRubleDollar := 0.0
+	bestRubleDollarRubleDollar := 0.0
+	bestRubleDollarEuroDollar := 0.0
+	for i := 0; i < 3; i++ {
+		for j := 0; j < 3; j++ {
+			for k := 0; k < 3; k++ {
+				if i != j && j != k && i != k {
+					bestRubleEuroRubleDollar = best(
+						bestRubleEuroRubleDollar,
+						banks[i].rubleToEuro*banks[j].euroToRuble*banks[k].rubleToDollar,
+					)
+					bestRubleDollarRubleDollar = best(
+						bestRubleDollarRubleDollar,
+						banks[i].rubleToDollar*banks[j].dollarToRuble*banks[k].rubleToDollar,
+					)
+					bestRubleDollarEuroDollar = best(
+						bestRubleDollarEuroDollar,
+						banks[i].rubleToDollar*banks[j].dollarToEuro*banks[k].euroToDollar,
+					)
 				}
 			}
 		}
 	}
 
-	fmt.Fprintln(out, bestRubleEuroDollar, bestRubleToDollar)
-	// Get the maximum dollars obtained
-	maxDollars = bestRubleToDollar
-	if bestRubleEuroDollar > maxDollars {
-		maxDollars = bestRubleEuroDollar
-	}
+	rez := best(
+		bestRubleToDollar,
+		bestRubleEuroDollar,
+		bestRubleEuroRubleDollar,
+		bestRubleDollarRubleDollar,
+		bestRubleDollarEuroDollar,
+	)
+	fmt.Fprintf(out, "%g\n", rez)
+}
 
-	fmt.Fprintf(out, "%.6f\n", maxDollars)
+func best(nums ...float64) float64 {
+	rez := nums[0]
+	for _, num := range nums {
+		if num > rez {
+			rez = num
+		}
+	}
+	return rez
+}
+
+func getProportion() float64 {
+	var a, b float64
+	fmt.Fscan(in, &a, &b)
+	return b / a
 }
