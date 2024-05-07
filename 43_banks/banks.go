@@ -54,7 +54,7 @@ func processTest() {
 			if i != j {
 				rubleToEuro := banks[i].rubleToEuro
 				euroToDollar := banks[j].euroToDollar
-				bestRubleToDollar = best(
+				bestRubleEuroDollar = best(
 					bestRubleEuroDollar,
 					rubleToEuro*euroToDollar,
 				)
