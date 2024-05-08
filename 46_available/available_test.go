@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,17 +22,27 @@ const (
 var reInputFile = regexp.MustCompile(`^\d+$`)
 
 func TestIt(t *testing.T) {
-	fileName, err := findMainFile()
-	assert.NoError(t, err, "Failed to find main file")
+	mainFile, err := findMainFile()
+	if !assert.NoError(t, err, "Failed to find main file") {
+		return
+	}
 
 	testCases, err := getTestCases(testDir)
-	assert.NoError(t, err, "Failed to get test cases")
+	if !assert.NoError(t, err, "Failed to get test cases") {
+		return
+	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			actualOutput, err := runMainPackage(fileName, tc.input)
-			assert.NoError(t, err, "Failed to run main package")
-			assert.Equal(t, string(tc.expectedOutput), string(actualOutput), "Test case %s failed", tc.name)
+			actualOutput, err := runMainPackage(mainFile, tc.input)
+			if !assert.NoErrorf(t, err, "Failed to run main package with file: '%s'", tc.name) {
+				return
+			}
+			actualOutputString := strings.TrimSpace(string(actualOutput))
+			expectedOutputString := strings.TrimSpace(string(tc.expectedOutput))
+			if !assert.Equal(t, expectedOutputString, actualOutputString, "Test case %s failed", tc.name) {
+				return
+			}
 		})
 	}
 }
