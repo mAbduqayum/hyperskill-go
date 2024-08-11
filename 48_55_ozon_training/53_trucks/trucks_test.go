@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -31,9 +32,18 @@ func TestIt(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			actualOutput, err := runMainPackage(fileName, tc.input)
 			assert.NoError(t, err, "Failed to run main package")
-			assert.Equal(t, string(tc.expectedOutput), string(actualOutput), "Test case %s failed", tc.name)
+
+			// Normalize line endings
+			expectedNormalized := normalizeLineEndings(string(tc.expectedOutput))
+			actualNormalized := normalizeLineEndings(string(actualOutput))
+
+			assert.Equal(t, expectedNormalized, actualNormalized, "Test case %s failed", tc.name)
 		})
 	}
+}
+
+func normalizeLineEndings(s string) string {
+	return strings.ReplaceAll(strings.ReplaceAll(s, "\r\n", "\n"), "\r", "\n")
 }
 
 func findMainFile() (string, error) {
