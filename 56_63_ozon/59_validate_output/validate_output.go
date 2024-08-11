@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -51,6 +51,10 @@ func solveTestCase() {
 
 	outputInts := make([]int, n)
 	for i, s := range output {
+		if hasLeadingZero(s) {
+			fmt.Fprintln(out, "no")
+			return
+		}
 		num, err := strconv.Atoi(s)
 		if err != nil {
 			fmt.Fprintln(out, "no")
@@ -59,12 +63,12 @@ func solveTestCase() {
 		outputInts[i] = num
 	}
 
-	if !sort.IntsAreSorted(outputInts) {
+	if !slices.IsSorted(outputInts) {
 		fmt.Fprintln(out, "no")
 		return
 	}
 
-	sort.Ints(input)
+	slices.Sort(input)
 	for i := 0; i < n; i++ {
 		if input[i] != outputInts[i] {
 			fmt.Fprintln(out, "no")
@@ -73,4 +77,8 @@ func solveTestCase() {
 	}
 
 	fmt.Fprintln(out, "yes")
+}
+
+func hasLeadingZero(s string) bool {
+	return len(s) > 1 && (s[0] == '0' || (s[0] == '-' && s[1] == '0'))
 }
