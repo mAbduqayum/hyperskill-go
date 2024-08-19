@@ -9,132 +9,87 @@ import (
 	"strings"
 )
 
-type Order struct {
-	index   int
-	arrival int
-}
-
-type Truck struct {
-	start, end, capacity, index int
-}
-
-func assignOrderToTruck(orders []Order, trucks []Truck) []int {
-	sort.Slice(orders, func(i, j int) bool {
-		return orders[i].arrival < orders[j].arrival
-	})
-
-	sort.Slice(trucks, func(i, j int) bool {
-		return trucks[i].start < trucks[j].start
-	})
-
-	type TruckOrder struct {
-		index int
-		truck Truck
-	}
-
-	var result []int
-	for _, order := range orders {
-		assigned := false
-
-		var resTrucks []TruckOrder
-
-		viewed := make(map[int]struct{})
-		dublicate := false
-
-		for j, truck := range trucks {
-			if truck.capacity > 0 && order.arrival >= truck.start && order.arrival <= truck.end {
-				resTrucks = append(resTrucks, TruckOrder{index: j, truck: truck})
-
-				if _, ok := viewed[truck.start]; ok {
-					dublicate = true
-				}
-
-				viewed[truck.start] = struct{}{}
-
-				//result = append(result, truck.index+1)
-				//trucks[j].capacity--
-				//
-				//// if capacity is 0, remove the truck from the list
-				//if trucks[j].capacity == 0 {
-				// trucks = append(trucks[:j], trucks[j+1:]...)
-				//}
-
-				assigned = true
-			}
-		}
-
-		if !assigned {
-			result = append(result, -1)
-			continue
-		}
-
-		if len(resTrucks) == 0 {
-			result = append(result, -1)
-			continue
-		}
-
-		fmt.Println(resTrucks)
-		fmt.Println(dublicate)
-
-		if dublicate == false {
-			t := resTrucks[0]
-
-			fmt.Println(result)
-			result = append(result, t.truck.index+1)
-			fmt.Println(result)
-			trucks[t.index].capacity--
-
-			continue
-		}
-
-		sort.Slice(resTrucks, func(i, j int) bool {
-			return resTrucks[i].truck.index < resTrucks[j].truck.index
-		})
-
-		t := resTrucks[0]
-
-		result = append(result, t.truck.index+1)
-		trucks[t.index].capacity--
-	}
-
-	return result
-}
+var (
+	in  = bufio.NewReader(os.Stdin)
+	out = bufio.NewWriter(os.Stdout)
+)
 
 func main() {
-	scanner := bufio.NewScanner(os.Stdin)
-	scanner.Scan()
-	t, _ := strconv.Atoi(scanner.Text())
-
+	defer out.Flush()
+	var t int
+	fmt.Fscan(in, &t)
 	for i := 0; i < t; i++ {
-		scanner.Scan()
-		n, _ := strconv.Atoi(scanner.Text())
-
-		scanner.Scan()
-		arrivals := strings.Split(scanner.Text(), " ")
-		orders := make([]Order, n)
-		for j, a := range arrivals {
-			arrival, _ := strconv.Atoi(a)
-			orders[j] = Order{index: j, arrival: arrival}
-		}
-
-		scanner.Scan()
-		m, _ := strconv.Atoi(scanner.Text())
-
-		trucks := make([]Truck, m)
-		for j := 0; j < m; j++ {
-			scanner.Scan()
-			vals := strings.Split(scanner.Text(), " ")
-			trucks[j].start, _ = strconv.Atoi(vals[0])
-			trucks[j].end, _ = strconv.Atoi(vals[1])
-			trucks[j].capacity, _ = strconv.Atoi(vals[2])
-			trucks[j].index = j
-		}
-
-		result := assignOrderToTruck(orders, trucks)
-		originalOrder := make([]int, n)
-		for i, order := range orders {
-			originalOrder[order.index] = result[i]
-		}
-		fmt.Println(strings.Trim(fmt.Sprint(originalOrder), "[]"))
+		processTest()
 	}
+}
+
+type truck struct {
+	start    int
+	end      int
+	capacity int
+	// todo: try to remove index
+	index int
+}
+
+func processTest() {
+	var arrivalsCount int
+	fmt.Fscan(in, &arrivalsCount)
+
+	arrivals := make([]int, arrivalsCount)
+	for i := 0; i < arrivalsCount; i++ {
+		fmt.Fscan(in, &arrivals[i])
+	}
+
+	var trucksCount int
+	fmt.Fscan(in, &trucksCount)
+
+	trucks := make([]truck, trucksCount)
+	for i := 0; i < trucksCount; i++ {
+		fmt.Fscan(in, &trucks[i].start, &trucks[i].end, &trucks[i].capacity)
+		trucks[i].index = i
+	}
+
+	sortedArrivals := make([]int, arrivalsCount)
+	copy(sortedArrivals, arrivals)
+	sort.Ints(sortedArrivals)
+	sortedArrivalsMap := make(map[int]int, arrivalsCount)
+
+	sortedTrucks := make([]truck, trucksCount)
+	copy(sortedTrucks, trucks)
+	sort.Slice(sortedTrucks, func(i, j int) bool {
+		if sortedTrucks[i].start == sortedTrucks[j].start {
+			return sortedTrucks[i].index < sortedTrucks[j].index
+		}
+		return sortedTrucks[i].start < sortedTrucks[j].start
+	})
+
+	currentTruckIndex := 0
+	for i := 0; i < arrivalsCount; i++ {
+		arrival := sortedArrivals[i]
+		if arrival < sortedTrucks[currentTruckIndex].start {
+			continue
+		}
+		if arrival > sortedTrucks[currentTruckIndex].end {
+			continue
+		}
+		sortedArrivalsMap[arrival] = sortedTrucks[currentTruckIndex].index + 1
+		sortedTrucks[currentTruckIndex].capacity--
+		if sortedTrucks[currentTruckIndex].capacity == 0 {
+			currentTruckIndex++
+			if currentTruckIndex >= trucksCount {
+				break
+			}
+		}
+	}
+
+	var rez strings.Builder
+	for _, arrival := range arrivals {
+		if val, ok := sortedArrivalsMap[arrival]; ok {
+			rez.WriteString(strconv.Itoa(val))
+		} else {
+			rez.WriteString(strconv.Itoa(-1))
+		}
+		rez.WriteByte(' ')
+	}
+	fmt.Fprintln(out, rez.String())
 }

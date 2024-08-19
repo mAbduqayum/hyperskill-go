@@ -33,7 +33,6 @@ func TestIt(t *testing.T) {
 			assert.NoError(t, err, "Failed to run main package")
 			assert.Equal(t, string(tc.expectedOutput), string(actualOutput), "Test case %s failed", tc.name)
 		})
-		break
 	}
 }
 
