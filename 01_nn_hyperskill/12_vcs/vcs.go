@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/sha256"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -29,6 +30,8 @@ func main() {
 		vcs.HandleCommit(args)
 	case "log":
 		vcs.HandleLog()
+	case "checkout":
+		vcs.HandleCheckout(args)
 	default:
 		if !vcs.HandleUnknownCommand(command) {
 			fmt.Printf("'%s' is not a SVCS command.\n", command)
@@ -191,6 +194,52 @@ func (v *VCS) HandleLog() {
 			}
 		}
 	}
+}
+
+func (v *VCS) HandleCheckout(args []string) {
+	if len(args) == 0 {
+		fmt.Println("Commit id was not passed.")
+		return
+	}
+
+	commitID := args[0]
+	commitDir := filepath.Join(vcsDir, commitsDir, commitID)
+
+	if _, err := os.Stat(commitDir); os.IsNotExist(err) {
+		fmt.Println("Commit does not exist.")
+		return
+	}
+
+	trackedFiles := strings.Split(v.readFile(indexFile), "\n")
+	for _, file := range trackedFiles {
+		if file == "" {
+			continue
+		}
+
+		sourceFile := filepath.Join(commitDir, filepath.Base(file))
+		if err := v.copyFile(sourceFile, file); err != nil {
+			log.Printf("Error restoring file %s: %v", file, err)
+		}
+	}
+
+	fmt.Printf("Switched to commit %s.\n", commitID)
+}
+
+func (v *VCS) copyFile(src, dst string) error {
+	sourceFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer sourceFile.Close()
+
+	destFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer destFile.Close()
+
+	_, err = io.Copy(destFile, sourceFile)
+	return err
 }
 
 func (v *VCS) getLastCommitHash() string {
