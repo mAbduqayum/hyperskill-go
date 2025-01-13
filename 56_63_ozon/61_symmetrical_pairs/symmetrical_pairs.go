@@ -34,20 +34,15 @@ func solveTestCase() {
 	count := 0
 	cache := make(map[int][]int, n)
 
+	for j := 1; j < n-1; j++ {
+		rightDiff := a[j+1] - a[j]
+		cache[rightDiff] = append(cache[rightDiff], j)
+	}
+
 	for i := 1; i < n-1; i++ {
 		leftDiff := a[i] - a[i-1]
-
 		if indexes, exists := cache[leftDiff]; exists {
 			count += countGreaterThan(indexes, i)
-			continue
-		}
-
-		for j := i + 1; j < n-1; j++ {
-			rightDiff := a[j+1] - a[j]
-			if leftDiff == rightDiff {
-				cache[leftDiff] = append(cache[leftDiff], j)
-				count++
-			}
 		}
 	}
 
