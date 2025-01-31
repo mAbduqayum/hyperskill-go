@@ -25,7 +25,7 @@ func TestIt(t *testing.T) {
 	assert.NoError(t, err, "Failed to find main file")
 
 	testCases, err := getTestCases(testDir)
-	assert.NoError(t, err, "Failed to get test cases")
+	assert.NoError(t, err, "Failed t get test cases")
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
