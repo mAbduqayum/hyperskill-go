@@ -69,17 +69,18 @@ type logistic struct {
 }
 
 func newLogistic(board []string) *logistic {
-	seen := make([][]bool, len(board))
+	m, n := len(board), len(board[0])
+	seen := make([][]bool, m)
 	for i := range seen {
-		seen[i] = make([]bool, len(board[i]))
+		seen[i] = make([]bool, n)
 	}
-	return &logistic{
-		board: board,
-		boxes: make([]box, 0),
-		seen:  seen,
-		m:     len(board),
-		n:     len(board[0]),
-	}
+	return &logistic{board, seen, nil, m, n}
+}
+
+func (l *logistic) parse() {
+	start := point{0, 0}
+	end := point{l.m, l.n}
+	l.boxes = l.getBoxes(start, end)
 }
 
 func (l *logistic) getId(x, y int) string {
@@ -91,12 +92,6 @@ func (l *logistic) getId(x, y int) string {
 		id.WriteByte(l.board[x][j])
 	}
 	return id.String()
-}
-
-func (l *logistic) parse() {
-	start := point{0, 0}
-	end := point{l.m, l.n}
-	l.boxes = l.getBoxes(start, end)
 }
 
 func (l *logistic) getBoxes(start, end point) []box {
