@@ -7,10 +7,6 @@ import (
 	"strings"
 )
 
-type pair struct {
-	even, odd string
-}
-
 var (
 	in  = bufio.NewReader(os.Stdin)
 	out = bufio.NewWriter(os.Stdout)
@@ -32,7 +28,7 @@ func solveTestCase() {
 
 	evenCounts := make(map[string]int)
 	oddCounts := make(map[string]int)
-	pairCounts := make(map[pair]int)
+	bothCounts := make(map[string]int)
 
 	for i := 0; i < n; i++ {
 		var s string
@@ -40,30 +36,17 @@ func solveTestCase() {
 
 		evenKey, oddKey := getKeys(s)
 
-		evenCounts[evenKey]++
 		oddCounts[oddKey]++
-		pairCounts[pair{evenKey, oddKey}]++
-	}
-
-	delete(evenCounts, "")
-	delete(oddCounts, "")
-
-	evenPairs := 0
-	for _, cnt := range evenCounts {
-		evenPairs += cnt * (cnt - 1) / 2
-	}
-
-	oddPairs := 0
-	for _, cnt := range oddCounts {
-		oddPairs += cnt * (cnt - 1) / 2
-	}
-
-	bothPairs := 0
-	for p, cnt := range pairCounts {
-		if p.even != "" && p.odd != "" {
-			bothPairs += cnt * (cnt - 1) / 2
+		if len(s) == 1 {
+			continue
 		}
+		evenCounts[evenKey]++
+		bothCounts[s]++
 	}
+
+	evenPairs := countPairs(evenCounts)
+	oddPairs := countPairs(oddCounts)
+	bothPairs := countPairs(bothCounts)
 
 	total := evenPairs + oddPairs - bothPairs
 	fmt.Fprintln(out, total)
@@ -72,11 +55,19 @@ func solveTestCase() {
 func getKeys(s string) (string, string) {
 	var evenBuilder, oddBuilder strings.Builder
 	for i := 0; i < len(s); i++ {
-		if i%2 == 1 {
-			evenBuilder.WriteByte(s[i])
-		} else {
+		if i%2 == 0 {
 			oddBuilder.WriteByte(s[i])
+		} else {
+			evenBuilder.WriteByte(s[i])
 		}
 	}
 	return evenBuilder.String(), oddBuilder.String()
+}
+
+func countPairs(m map[string]int) int {
+	pairs := 0
+	for _, cnt := range m {
+		pairs += cnt * (cnt - 1) / 2
+	}
+	return pairs
 }
