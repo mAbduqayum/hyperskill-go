@@ -16,6 +16,8 @@ The repository uses a consistent testing pattern across problems:
 # Run tests for a specific problem
 cd path/to/problem_directory
 go test
+# or specific test file:
+go run problem.go < tests/1
 ```
 
 ### Test Structure
