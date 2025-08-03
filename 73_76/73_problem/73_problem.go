@@ -26,18 +26,14 @@ func solveTestCase() {
 	var w, h int
 	fmt.Fscan(in, &w, &h)
 
-	totalRows := 2*h + 1
-
-	for row := 0; row < totalRows; row++ {
-		switch {
-		case row == 0:
-			printTopLine(w, h)
-		case row <= h:
-			printUpperHalf(w, h, row)
-		default:
-			printLowerHalf(w, h, row, totalRows)
-		}
+	printTopLine(w, h)
+	for row := 1; row <= h; row++ {
+		printUpperHalf(w, h, row)
 	}
+	for row := h + 1; row < 2*h; row++ {
+		printLowerHalf(w, h, row)
+	}
+	printBottomLine(w, h)
 }
 
 func printTopLine(w, h int) {
@@ -53,17 +49,16 @@ func printUpperHalf(w, h, row int) {
 	fmt.Fprintf(out, "%s/%s\\\n", leadingSpaces, middleSpaces)
 }
 
-func printLowerHalf(w, h, row, totalRows int) {
+func printLowerHalf(w, h, row int) {
 	sideIndex := row - h - 1
 	leadingSpaces := strings.Repeat(" ", sideIndex)
+	middleWidth := w + 2*(h-1-sideIndex)
+	middleSpaces := strings.Repeat(" ", middleWidth)
+	fmt.Fprintf(out, "%s\\%s/\n", leadingSpaces, middleSpaces)
+}
 
-	var middle string
-	if row == totalRows-1 {
-		middle = strings.Repeat("_", w)
-	} else {
-		middleWidth := w + 2*(h-1-sideIndex)
-		middle = strings.Repeat(" ", middleWidth)
-	}
-
-	fmt.Fprintf(out, "%s\\%s/\n", leadingSpaces, middle)
+func printBottomLine(w, h int) {
+	leadingSpaces := strings.Repeat(" ", h-1)
+	underscores := strings.Repeat("_", w)
+	fmt.Fprintf(out, "%s\\%s/\n", leadingSpaces, underscores)
 }
